@@ -1,16 +1,20 @@
-module.exports = async (request, response) => {
-    if (request.url.startsWith('/login.html')) {
-        return
-    }
+const jose = require('jose')
+const {
+  cookieNames,
+  cookies,
+  unauthorized,
+  toLogin
+} = require('./common')
 
-    const authorization = request.headers.authorization ?? ''
-    const [,token] = authorization.match(/Bearer (.*)/) || []
-
-
-
-
-    response.writeHead(302, {
-        location: `/login.html?${encodeURIComponent(request.url.substring(1))}`
-    })
-    response.end()
+module.exports = async function isAuthenticated (request, response) {
+  if (unauthorized.some(url => request.url.startsWith(url))) {
+    return
+  }
+  try {
+    const token = cookies(request)[cookieNames.jwt]
+    const { payload } = await jose.jwtVerify(token, Buffer.from(cfg.jwt.secret))
+    request.jwt = payload
+  } catch (e) {
+    toLogin(request, response)
+  }
 }
