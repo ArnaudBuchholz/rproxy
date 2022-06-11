@@ -3,7 +3,6 @@
 'use strict'
 
 global.cfg = require('./.rproxy.json')
-const jose = require('jose')
 const { log, check, serve } = require('reserve')
 check({
   port: 80,
@@ -11,11 +10,19 @@ check({
     custom: require('./is-authenticated.js')
   }, {
     method: 'GET',
-    match: '/login',
+    match: '^/login',
     file: 'login.html'
+  }, {
+    method: 'POST',
+    match: '^/login',
+    custom: require('./login.js')
+  }, {
+    method: 'GET',
+    match: '^/index',
+    file: 'index.html'
   }, {
     file: '403.html'
   }]
 }).then(configuration => {
-  log(serve(configuration))
+  log(serve(configuration), true)
 })
