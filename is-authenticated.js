@@ -1,13 +1,13 @@
 const jose = require('jose')
 const {
+  $restricted,
   cookieNames,
   cookies,
-  unauthorized,
   toLogin
 } = require('./common')
 
 module.exports = async function isAuthenticated (request, response) {
-  if (unauthorized.some(url => request.url.startsWith(url))) {
+  if (!request[$restricted]) {
     return
   }
   try {
