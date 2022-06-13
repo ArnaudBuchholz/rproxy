@@ -21,6 +21,8 @@ function log (...args) {
 check({
   port: 80,
   mappings: [{
+    custom: require('./is-restricted.js')
+  }, {
     custom: require('./is-authenticated.js')
   }, {
     method: 'GET',
@@ -35,6 +37,7 @@ check({
     match: '^/index',
     file: 'index.html'
   }, {
+    'http-status': 403,
     file: '403.html'
   }]
 }).then(configuration => {
