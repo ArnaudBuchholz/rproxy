@@ -28,10 +28,10 @@ const setCookie = (name, value, maxAge = 0) => {
 }
 
 module.exports = {
+  $restricted: Symbol('restricted'),
   cookieNames,
   cookies,
   setCookie,
-  unauthorized: ['/login', '/403', '/favicon.ico'],
   toLogin: (request, response) => {
     const redirect = cookies(request)[cookieNames.redirect] || encodeURIComponent(request.url.substring(1))
     response.writeHead(302, {
