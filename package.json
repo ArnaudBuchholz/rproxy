@@ -22,6 +22,6 @@
   "homepage": "https://github.com/ArnaudBuchholz/rproxy#readme",
   "dependencies": {
     "jose": "^4.8.1",
-    "reserve": "^1.15.0"
+    "reserve": "^1.15.1"
   }
 }
