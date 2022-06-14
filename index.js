@@ -5,6 +5,7 @@
 global.cfg = require('./.rproxy.json')
 const { check, serve } = require('reserve')
 const { writeFileSync } = require('fs')
+const { $restricted, $site } = require('./common')
 
 function log (...args) {
   const now = new Date().toISOString()
@@ -34,8 +35,16 @@ check({
     custom: require('./login.js')
   }, {
     method: 'GET',
-    match: '^/index',
+    match: '^/(index.*)?$',
     file: 'index.html'
+  }, {
+    'if-match': (request, url, match) => {
+      if (!request[$restricted] || !request[$site]) {
+        return false
+      }
+      return match
+    },
+    url: 'https://arnaudbuchholz.github.io/'
   }, {
     'http-status': 403,
     file: '403.html'
