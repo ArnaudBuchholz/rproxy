@@ -4,26 +4,20 @@
 
 global.cfg = require('./.rproxy.json')
 const { check, serve } = require('reserve')
-const { writeFileSync } = require('fs')
-const { $restricted, $site, $indirect } = require('./common')
-
-function log (...args) {
-  const now = new Date().toISOString()
-  const fileName = `logs/${now.substring(0, 10)}.csv`
-  writeFileSync(fileName, [now, ...args]
-    .map(arg => arg.toString())
-    .map(arg => arg.match(/"|;/) ? `"${arg.replace(/"|\//g, m => `\\${m}`)}"` : arg)
-    .join(';') + '\n',
-  {
-    flag: 'a+'
-  })
-}
+const { $restricted, $site, $indirect, $forward } = require('./common')
+const log = require('./log')
 
 check({
   port: 80,
   mappings: [{
     custom: require('./is-restricted.js')
   }, {
+    'if-match': (request, url, match) => {
+      if (!request[$restricted]) {
+        return false
+      }
+      return match
+    },
     custom: require('./is-authenticated.js')
   }, {
     method: 'GET',
@@ -39,11 +33,19 @@ check({
     file: 'index.html'
   }, {
     'if-match': (request, url, match) => {
+      if (!request[$site]) {
+        return false
+      }
+      return match
+    },
+    custom: require('./dns-lookup.js')
+  }, {
+    'if-match': (request, url, match) => {
       if (!request[$site] || !request[$indirect]) {
         return false
       }
       match[2] = match[1]
-      match[1] = request[$site].forward
+      match[1] = request[$site][$forward]
       return match
     },
     match: /^\/(.*)/,
@@ -53,7 +55,7 @@ check({
       if (!request[$site]) {
         return false
       }
-      match[1] = request[$site].forward
+      match[1] = request[$site][$forward]
       return match
     },
     match: /^\/([^\/]+)\/?(.*)?/,
