@@ -31,6 +31,7 @@ module.exports = {
   $restricted: Symbol('restricted'),
   $site: Symbol('site'),
   $indirect: Symbol('indirect'),
+  $forward: Symbol('forward'),
   cookieNames,
   cookies,
   setCookie,
