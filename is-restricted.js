@@ -1,4 +1,4 @@
-const { $restricted, $site } = require('./common')
+const { $restricted, $site, $indirect } = require('./common')
 const allowed = [
   '/index',
   '/login',
@@ -6,15 +6,32 @@ const allowed = [
   '/favicon.ico'
 ]
 
+const checkSite = (request, url = request.url) => {
+  const siteName = Object.keys(cfg.sites)
+    .filter(candidate => url.startsWith(`/${candidate}/`) || url === `/${candidate}`)[0]
+  if (siteName) {
+    request[$site] = cfg.sites[siteName]
+    request[$restricted] = cfg.sites[siteName].restricted
+    return true
+  }
+  return false
+}
+
 module.exports = async function isRestricted (request, response) {
   if (allowed.some(prefix => request.url.startsWith(prefix))) {
     return
   }
-  const siteName = Object.keys(cfg.sites)
-    .filter(candidate => request.url.startsWith(`/${candidate}/`) || request.url === `/${candidate}`)[0]
-  if (siteName) {
-    request[$site] = cfg.sites[siteName]
-    request[$restricted] = cfg.sites[siteName].restricted
+  if (checkSite(request)) {
+    return
   }
-  request[$restricted] = true
+  if (request.headers.referer) {
+    try {
+      const referer = request.headers.referer.match(/https?:\/\/[^/]*(\/.*)/)[1]
+      if (checkSite(request, referer)) {
+        request[$indirect] = true
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
 }
