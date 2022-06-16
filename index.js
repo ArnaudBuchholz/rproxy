@@ -66,7 +66,7 @@ check({
   }]
 }).then(configuration => {
   serve(configuration)
-    .on('ready', () => log('READY', 0))
+    .on('ready', () => log('READY'))
     .on('incoming', event => !event.internal ? log('INCMG', event.id, JSON.stringify({ ...event, id: undefined })) : 0)
     .on('redirecting', ({ id, internal, type, redirect }) => {
       if (!internal) {
