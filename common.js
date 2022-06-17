@@ -30,6 +30,7 @@ const setCookie = (name, value, maxAge = 0) => {
 module.exports = {
   $restricted: Symbol('restricted'),
   $site: Symbol('site'),
+  $siteName: Symbol('site-name'),
   $indirect: Symbol('indirect'),
   $forward: Symbol('forward'),
   cookieNames,
