@@ -1,4 +1,4 @@
-const { $restricted, $site, $indirect } = require('./common')
+const { $restricted, $site, $siteName, $indirect } = require('./common')
 const allowed = [
   '/index',
   '/login',
@@ -10,6 +10,7 @@ const checkSite = (request, url = request.url) => {
   const siteName = Object.keys(cfg.sites)
     .filter(candidate => url.startsWith(`/${candidate}/`) || url === `/${candidate}`)[0]
   if (siteName) {
+    request[$siteName] = siteName
     request[$site] = cfg.sites[siteName]
     request[$restricted] = cfg.sites[siteName].restricted
     return true
