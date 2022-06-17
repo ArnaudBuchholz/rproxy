@@ -4,7 +4,7 @@
 
 global.cfg = require('./.rproxy.json')
 const { check, serve } = require('reserve')
-const { $restricted, $site, $indirect, $forward } = require('./common')
+const { $restricted, $site, $siteName, $indirect, $forward } = require('./common')
 const log = require('./log')
 
 check({
@@ -45,11 +45,14 @@ check({
         return false
       }
       match[2] = match[1]
-      match[1] = request[$site][$forward]
+      match[1] = request[$siteName]
       return match
     },
     match: /^\/(.*)/,
-    url: '$1/$2'
+    status: 307,
+    headers: {
+      location: '/$1/$2'
+    }
   }, {
     'if-match': (request, url, match) => {
       if (!request[$site]) {
