@@ -2,22 +2,16 @@
 
 'use strict'
 
-global.cfg = require('./.rproxy.json')
+require('./configuration')
 const { check, serve } = require('reserve')
-const { $restricted, $site, $siteName, $indirect, $forward } = require('./common')
+const { $site } = require('./symbols')
 const log = require('./log')
 
 check({
   port: 80,
   mappings: [{
-    custom: require('./is-restricted.js')
+    custom: require('./identify-site.js')
   }, {
-    'if-match': (request, url, match) => {
-      if (!request[$restricted]) {
-        return false
-      }
-      return match
-    },
     custom: require('./is-authenticated.js')
   }, {
     method: 'GET',
@@ -32,12 +26,6 @@ check({
     match: '^/(index.*)?$',
     file: 'index.html'
   }, {
-    'if-match': (request, url, match) => {
-      if (!request[$site]) {
-        return false
-      }
-      return match
-    },
     custom: require('./dns-lookup.js')
   }, {
     'if-match': (request, url, match) => {
@@ -71,16 +59,6 @@ check({
   serve(configuration)
     .on('ready', () => log('READY'))
     .on('incoming', event => !event.internal ? log('INCMG', event.id, JSON.stringify({ ...event, id: undefined })) : 0)
-    .on('redirecting', ({ id, internal, type, redirect }) => {
-      if (!internal) {
-        if (typeof redirect === 'function') {
-          redirect = redirect.name || 'anonymous'
-        } else {
-          redirect = redirect.toString()
-        }
-        log('RDRCT', id, JSON.stringify({ type, redirect }))
-      }
-    })
     .on('redirected', ({ id, internal, timeSpent, statusCode }) => !internal ? log('SERVE', id, JSON.stringify({ timeSpent, statusCode })) : 0)
     .on('error', ({ id, internal, reason }) => {
       if (!internal) {
