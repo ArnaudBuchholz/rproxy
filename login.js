@@ -2,15 +2,19 @@
 
 const { body } = require('reserve')
 const jose = require('jose')
-const { cookieNames, cookies, setCookie, toLogin } = require('./common')
+const { read, names, set } = require('./cookies')
+const toLogin = require('./to-login')
+const { $requestId } = require('reserve/symbols')
+const log = require('./log')
 
 module.exports = async function login (request, response) {
+  let user = '(none)'
   try {
     const payload = new URLSearchParams(await body(request))
-    const user = payload.get('u')
+    user = payload.get('u')
     const password = payload.get('p')
     const remember = payload.get('r')
-    const redirect = cookies(request)[cookieNames.redirect]
+    const redirect = read(request)[names.redirect] || '/'
     if (password !== cfg.users[user].password) {
       throw new Error('wrong password')
     }
@@ -24,13 +28,14 @@ module.exports = async function login (request, response) {
     if (remember === 'on') {
       maxAge = cfg.jwt.expiration
     }
+    log('LOGIN', request[$requestId], user, redirect)
     response.writeHead(302, {
       location: `/${redirect}`,
-      'set-cookie': setCookie(cookieNames.jwt, jwt, maxAge)
+      'set-cookie': set(names.jwt, jwt, maxAge)
     })
     response.end()
   } catch (e) {
-    console.log(e)
+    log('LOGKO', request[$requestId], user, e.toString())
     toLogin(request, response)
   }
 }
