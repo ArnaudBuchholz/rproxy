@@ -1,5 +1,6 @@
 const dns = require('dns')
-const { $site, $forward } = require('./common')
+const { $site, $forward } = require('./symbols')
+const { $requestId } = require('reserve/symbols')
 const log = require('./log')
 
 const $dnsLookup = Symbol('dns-lookup')
@@ -18,14 +19,13 @@ module.exports = async function dnsLookup (request) {
     site[$dnsRefresh] = now + DNS_TIMEOUT
     const hostname = site.forward.match(HOST_REGEXP)[1]
     site[$dnsLookup] = new Promise((resolve) => {
-      log('DNS>>', 0, hostname)
       dns.lookup(hostname, function (err, address, family) {
         if (err) {
-          log('DNS!!', 0, err)
+          log('DNSLK', request[$requestId], hostname, err)
           site[$forward] = site.forward
           resolve()
         }
-        log('DNS<<', 0, address)
+        log('DNSLK', request[$requestId], hostname, address)
         site[$forward] = site.forward.replace(HOST_REGEXP, match => match.replace(hostname, address))
         resolve()
       })
