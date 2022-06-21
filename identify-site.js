@@ -1,4 +1,4 @@
-const { $site, $referer } = require('./symbols')
+const { $site, $name, $referer } = require('./symbols')
 const { $requestId } = require('reserve/symbols')
 const { names, read } = require('./cookies')
 const log = require('./log')
@@ -11,8 +11,15 @@ const allowed = [
 ]
 
 const defaultSite = {
+  [$name]: '(default)',
   restricted: false,
   forward: '/'
+}
+
+const noSite = {
+  [$name]: '(none)',
+  restricted: true,
+  forward: '/403'
 }
 
 const checkSite = (request, url = request.url) => {
@@ -49,10 +56,11 @@ function resolve (request) {
       // ignore
     }
   }
+  request[$site] = noSite
 }
 
 module.exports = async function identifySite (request) {
   resolve(request)
   const site = request[$site]
-  log('IDSIT', request[$requestId], site[$name] || '(default)', site.restricted)
+  log('IDSIT', request[$requestId], site[$name], site.restricted)
 }
