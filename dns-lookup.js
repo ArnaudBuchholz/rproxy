@@ -1,35 +1,48 @@
 const dns = require('dns')
-const { $site, $forward } = require('./symbols')
+const { $site, $hostname, $forward } = require('./symbols')
 const { $requestId } = require('reserve/symbols')
 const log = require('./log')
 
-const $dnsLookup = Symbol('dns-lookup')
-const $dnsRefresh = Symbol('dns-refresh')
-const DNS_TIMEOUT = 30 * 60 * 1000
-const HOST_REGEXP = /https?:\/\/([^/:]*)/
+const $dnsCache = Symbol('dns-cache')
+const REFRESH = 30 * 60 * 1000
 
 module.exports = async function dnsLookup (request) {
   const site = request[$site]
-  const now = Date.now()
-  if (!site[$dnsLookup]) {
-    const dnsRefresh = site[$dnsRefresh] || 0
-    if (dnsRefresh > now) {
-      return
+  const hostname = site[$hostname]
+  if (!hostname) {
+    return
+  }
+
+  let cache = this[$dnsCache]
+  if (!cache) {
+    cache = {}
+    this[$dnsCache] = cache
+  }
+
+  let cachedHost = cache[hostname]
+  if (!cachedHost) {
+    cachedHost = {
+      name: hostname
     }
-    site[$dnsRefresh] = now + DNS_TIMEOUT
-    const hostname = site.forward.match(HOST_REGEXP)[1]
-    site[$dnsLookup] = new Promise((resolve) => {
+    cache[hostname] = cachedHost
+  }
+
+  const now = Date.now()
+  if (!cachedHost.address || cachedHost.refresh < now) {
+    cachedHost.refresh = now + REFRESH
+    cachedHost.promise = new Promise((resolve) => {
       dns.lookup(hostname, function (err, address, family) {
         if (err) {
           log('DNSLK', request[$requestId], hostname, err)
-          site[$forward] = site.forward
+          cachedHost.address = hostname
           resolve()
         }
         log('DNSLK', request[$requestId], hostname, address)
-        site[$forward] = site.forward.replace(HOST_REGEXP, match => match.replace(hostname, address))
+        cachedHost.address = address
         resolve()
       })
     })
   }
-  await site[$dnsLookup]
+  await cachedHost.promise
+  site[$forward] = site.forward.replace(hostname, cachedHost.address)
 }
