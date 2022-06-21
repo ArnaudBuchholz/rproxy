@@ -4,7 +4,7 @@
 
 require('./configuration')
 const { check, serve } = require('reserve')
-const { $site } = require('./symbols')
+const { $site, $forward } = require('./symbols')
 const log = require('./log')
 
 check({
@@ -27,20 +27,20 @@ check({
     file: 'index.html'
   }, {
     custom: require('./dns-lookup.js')
-  }, {
-    'if-match': (request, url, match) => {
-      if (!request[$site] || !request[$indirect]) {
-        return false
-      }
-      match[2] = match[1]
-      match[1] = request[$siteName]
-      return match
-    },
-    match: /^\/(.*)/,
-    status: 307,
-    headers: {
-      location: '/$1/$2'
-    }
+  // }, {
+  //   'if-match': (request, url, match) => {
+  //     if (!request[$site] || !request[$indirect]) {
+  //       return false
+  //     }
+  //     match[2] = match[1]
+  //     match[1] = request[$siteName]
+  //     return match
+  //   },
+  //   match: /^\/(.*)/,
+  //   status: 307,
+  //   headers: {
+  //     location: '/$1/$2'
+  //   }
   }, {
     'if-match': (request, url, match) => {
       if (!request[$site]) {
@@ -61,6 +61,7 @@ check({
     .on('incoming', event => !event.internal ? log('INCMG', event.id, JSON.stringify({ ...event, id: undefined })) : 0)
     .on('redirected', ({ id, internal, timeSpent, statusCode }) => !internal ? log('SERVE', id, JSON.stringify({ timeSpent, statusCode })) : 0)
     .on('error', ({ id, internal, reason }) => {
+      console.error(reason)
       if (!internal) {
         log('ERROR', id, reason && reason.toString() || '')
       }
